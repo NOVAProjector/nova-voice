@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NOVA Röstkanal</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background: #111827;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+}
+
+h2 {
+    margin-bottom: 5px;
+}
+
+.status {
+    color: #9ca3af;
+    margin-bottom: 25px;
+}
+
+.participant {
+    display: flex;
+    align-items: center;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #1f2937;
+    border-radius: 12px;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.participant-info {
+    flex: 1;
+}
+
+.participant-name {
+    font-weight: bold;
+}
+
+.participant-status {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.speaking {
+    border: 1px solid #22c55e;
+}
+
+.buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+button {
+    flex: 1;
+    padding: 15px 10px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    background: #2563eb;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+#micButton {
+    background: #374151;
+}
+
+#leaveButton {
+    background: #dc2626;
+}
+
+#participants {
+    margin-top: 15px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <h2>NOVA Röstkanal</h2>
+    <div class="status" id="status">Väntar på anslutning...</div>
+
+    <div id="participants"></div>
+
+    <div class="buttons">
+        <button id="connectButton">Anslut</button>
+        <button id="micButton" disabled>Mikrofon av</button>
+        <button id="leaveButton" disabled>Lämna</button>
+    </div>
+
+</div>
+
+<script type="module">
+import {
+    Room,
+    RoomEvent,
+    Track
+} from "https://cdn.jsdelivr.net/npm/livekit-client@2.23.0/+esm";
+
+let credentials = null;
+let room = null;
+let micEnabled = false;
+
+const statusElement = document.getElementById("status");
+const participantsElement = document.getElementById("participants");
+const connectButton = document.getElementById("connectButton");
+const micButton = document.getElementById("micButton");
+const leaveButton = document.getElementById("leaveButton");
+
+const audioContainer = document.createElement("div");
+audioContainer.style.display = "none";
+document.body.appendChild(audioContainer);
+
+function setStatus(text) {
+    statusElement.textContent = text;
+}
+
+function updateParticipants() {
+    if (!room) return;
+
+    participantsElement.innerHTML = "";
+
+    const participants = [
+        room.localParticipant,
+        ...room.remoteParticipants.values()
+    ];
+
+    for (const participant of participants) {
+        const isLocal =
+            participant.identity === room.localParticipant.identity;
+
+        const isSpeaking = participant.isSpeaking;
+
+        const item = document.createElement("div");
+        item.className = "participant" +
+            (isSpeaking ? " speaking" : "");
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = isLocal ? "🎙" : "👤";
+
+        const info = document.createElement("div");
+        info.className = "participant-info";
+
+        const name = document.createElement("div");
+        name.className = "participant-name";
+        name.textContent =
+            participant.name ||
+            participant.identity ||
+            "NOVA-användare";
+
+        const participantStatus = document.createElement("div");
+        participantStatus.className = "participant-status";
+        participantStatus.textContent = isSpeaking
+            ? "● Pratar"
+            : (isLocal
+                ? (micEnabled ? "Din mikrofon är på" : "Din mikrofon är av")
+                : "Ansluten");
+
+        info.appendChild(name);
+        info.appendChild(participantStatus);
+
+        item.appendChild(avatar);
+        item.appendChild(info);
+
+        participantsElement.appendChild(item);
+    }
+}
+
+function attachAudio(track) {
+    const element = track.attach();
+    element.autoplay = true;
+    element.playsInline = true;
+    audioContainer.appendChild(element);
+}
+
+window.NOVA = {
+    receiveCredentials(data) {
+        credentials = data;
+        setStatus("Redo att ansluta till NOVA.");
+    }
+};
+
+connectButton.addEventListener("click", async () => {
+    if (!credentials) {
+        setStatus("Inloggningsuppgifter saknas.");
+        return;
+    }
+
+    connectButton.disabled = true;
+    setStatus("Ansluter...");
+
+    try {
+        room = new Room({
+            adaptiveStream: true,
+            dynacast: true
+        });
+
+        room.on(RoomEvent.ParticipantConnected, updateParticipants);
+        room.on(RoomEvent.ParticipantDisconnected, updateParticipants);
+        room.on(RoomEvent.ActiveSpeakersChanged, updateParticipants);
+
+        room.on(RoomEvent.TrackSubscribed, (track) => {
+            if (track.kind === Track.Kind.Audio) {
+                attachAudio(track);
+            }
+        });
+
+        room.on(RoomEvent.TrackUnsubscribed, (track) => {
+            track.detach().forEach(element => element.remove());
+        });
+
+        room.on(RoomEvent.Disconnected, () => {
+            micEnabled = false;
+            updateParticipants();
+            setStatus("Frånkopplad.");
+            connectButton.disabled = false;
+            micButton.disabled = true;
+            leaveButton.disabled = true;
+        });
+
+        await room.connect(
+            credentials.serverUrl,
+            credentials.token
+        );
+
+        await room.localParticipant.setMicrophoneEnabled(true);
+        micEnabled = true;
+
+        connectButton.disabled = true;
+        micButton.disabled = false;
+        leaveButton.disabled = false;
+
+        setStatus("Ansluten till " + credentials.room);
+        micButton.textContent = "Mikrofon av";
+
+        updateParticipants();
+
+    } catch (error) {
+        console.error(error);
+        setStatus("Kunde inte ansluta: " + error.message);
+
+        if (room) {
+            try {
+                await room.disconnect();
+            } catch {}
+
+            room = null;
+        }
+
+        connectButton.disabled = false;
+    }
+});
+
+micButton.addEventListener("click", async () => {
+    if (!room) return;
+
+    try {
+        micEnabled = !micEnabled;
+
+        await room.localParticipant.setMicrophoneEnabled(micEnabled);
+
+        micButton.textContent = micEnabled
+            ? "Mikrofon av"
+            : "Mikrofon på";
+
+        updateParticipants();
+
+    } catch (error) {
+        console.error(error);
+        setStatus("Kunde inte ändra mikrofonen.");
+    }
+});
+
+leaveButton.addEventListener("click", async () => {
+    if (room) {
+        await room.disconnect();
+        room = null;
+    }
+
+    micEnabled = false;
+    participantsElement.innerHTML = "";
+    connectButton.disabled = false;
+    micButton.disabled = true;
+    leaveButton.disabled = true;
+    micButton.textContent = "Mikrofon av";
+
+    setStatus("Du har lämnat röstkanalen.");
+});
+</script>
+</body>
+</html>
