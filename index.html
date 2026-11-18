@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -142,10 +142,6 @@ const connectButton = document.getElementById("connectButton");
 const micButton = document.getElementById("micButton");
 const leaveButton = document.getElementById("leaveButton");
 
-const audioContainer = document.createElement("div");
-audioContainer.style.display = "none";
-document.body.appendChild(audioContainer);
-
 function setStatus(text) {
     statusElement.textContent = text;
 }
@@ -202,13 +198,35 @@ function updateParticipants() {
     }
 }
 
-function attachAudio(track) {
+// Hantera inkommande ljud från andra deltagare.
+async function attachAudio(track) {
     const element = track.attach();
+
     element.autoplay = true;
     element.playsInline = true;
-    audioContainer.appendChild(element);
+    element.muted = false;
+    element.volume = 1;
+
+    // Håll ljudspelaren utanför det synliga gränssnittet.
+    element.style.position = "fixed";
+    element.style.left = "-9999px";
+    element.style.width = "1px";
+    element.style.height = "1px";
+
+    document.body.appendChild(element);
+
+    try {
+        await element.play();
+        console.log("NOVA: Ljuduppspelning startad.");
+    } catch (error) {
+        console.error(
+            "NOVA: Kunde inte starta ljuduppspelning:",
+            error
+        );
+    }
 }
 
+// Ta emot inloggningsuppgifter från NOVA-appen.
 window.NOVA = {
     receiveCredentials(data) {
         credentials = data;
@@ -216,6 +234,7 @@ window.NOVA = {
     }
 };
 
+// Anslut till den globala röstkanalen.
 connectButton.addEventListener("click", async () => {
     if (!credentials) {
         setStatus("Inloggningsuppgifter saknas.");
@@ -231,24 +250,50 @@ connectButton.addEventListener("click", async () => {
             dynacast: true
         });
 
-        room.on(RoomEvent.ParticipantConnected, updateParticipants);
-        room.on(RoomEvent.ParticipantDisconnected, updateParticipants);
-        room.on(RoomEvent.ActiveSpeakersChanged, updateParticipants);
+        room.on(
+            RoomEvent.ParticipantConnected,
+            updateParticipants
+        );
 
-        room.on(RoomEvent.TrackSubscribed, (track) => {
-            if (track.kind === Track.Kind.Audio) {
-                attachAudio(track);
+        room.on(
+            RoomEvent.ParticipantDisconnected,
+            updateParticipants
+        );
+
+        room.on(
+            RoomEvent.ActiveSpeakersChanged,
+            updateParticipants
+        );
+
+        // När en annan deltagare skickar ett ljudspår.
+        room.on(
+            RoomEvent.TrackSubscribed,
+            async (track, publication, participant) => {
+                if (track.kind === Track.Kind.Audio) {
+                    console.log(
+                        "NOVA: Ljudspår mottaget från:",
+                        participant.identity
+                    );
+
+                    await attachAudio(track);
+                }
             }
-        });
+        );
 
-        room.on(RoomEvent.TrackUnsubscribed, (track) => {
-            track.detach().forEach(element => element.remove());
-        });
+        // Ta bort ljudspelaren när ljudspåret avslutas.
+        room.on(
+            RoomEvent.TrackUnsubscribed,
+            (track) => {
+                track.detach().forEach(element => element.remove());
+            }
+        );
 
         room.on(RoomEvent.Disconnected, () => {
             micEnabled = false;
             updateParticipants();
+
             setStatus("Frånkopplad.");
+
             connectButton.disabled = false;
             micButton.disabled = true;
             leaveButton.disabled = true;
@@ -259,7 +304,23 @@ connectButton.addEventListener("click", async () => {
             credentials.token
         );
 
+        // Försök låsa upp ljuduppspelningen i Android WebView.
+        try {
+            await room.startAudio();
+
+            console.log(
+                "NOVA: LiveKit-ljuduppspelning upplåst."
+            );
+        } catch (audioError) {
+            console.error(
+                "NOVA: Kunde inte låsa upp ljuduppspelningen:",
+                audioError
+            );
+        }
+
+        // Aktivera mikrofonen.
         await room.localParticipant.setMicrophoneEnabled(true);
+
         micEnabled = true;
 
         connectButton.disabled = true;
@@ -267,12 +328,14 @@ connectButton.addEventListener("click", async () => {
         leaveButton.disabled = false;
 
         setStatus("Ansluten till " + credentials.room);
+
         micButton.textContent = "Mikrofon av";
 
         updateParticipants();
 
     } catch (error) {
-        console.error(error);
+        console.error("NOVA anslutningsfel:", error);
+
         setStatus("Kunde inte ansluta: " + error.message);
 
         if (room) {
@@ -287,6 +350,7 @@ connectButton.addEventListener("click", async () => {
     }
 });
 
+// Slå på eller av mikrofonen.
 micButton.addEventListener("click", async () => {
     if (!room) return;
 
@@ -307,6 +371,7 @@ micButton.addEventListener("click", async () => {
     }
 });
 
+// Lämna röstkanalen.
 leaveButton.addEventListener("click", async () => {
     if (room) {
         await room.disconnect();
@@ -314,10 +379,13 @@ leaveButton.addEventListener("click", async () => {
     }
 
     micEnabled = false;
+
     participantsElement.innerHTML = "";
+
     connectButton.disabled = false;
     micButton.disabled = true;
     leaveButton.disabled = true;
+
     micButton.textContent = "Mikrofon av";
 
     setStatus("Du har lämnat röstkanalen.");
@@ -325,3 +393,4 @@ leaveButton.addEventListener("click", async () => {
 </script>
 </body>
 </html>
+```
