@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="sv">
 <head>
@@ -76,10 +76,12 @@ h2 {
     display: flex;
     gap: 10px;
     margin-top: 25px;
+    flex-wrap: wrap;
 }
 
 button {
     flex: 1;
+    min-width: 100px;
     padding: 15px 10px;
     border: 0;
     border-radius: 10px;
@@ -97,6 +99,14 @@ button:disabled {
 
 #micButton {
     background: #374151;
+}
+
+#speakerButton {
+    background: #374151;
+}
+
+#speakerButton.active {
+    background: #16a34a;
 }
 
 #leaveButton {
@@ -120,6 +130,7 @@ button:disabled {
     <div class="buttons">
         <button id="connectButton">Anslut</button>
         <button id="micButton" disabled>Mikrofon av</button>
+        <button id="speakerButton" disabled>Högtalare av</button>
         <button id="leaveButton" disabled>Lämna</button>
     </div>
 
@@ -135,15 +146,33 @@ import {
 let credentials = null;
 let room = null;
 let micEnabled = false;
+let speakerEnabled = false;
 
 const statusElement = document.getElementById("status");
 const participantsElement = document.getElementById("participants");
 const connectButton = document.getElementById("connectButton");
 const micButton = document.getElementById("micButton");
+const speakerButton = document.getElementById("speakerButton");
 const leaveButton = document.getElementById("leaveButton");
 
 function setStatus(text) {
     statusElement.textContent = text;
+}
+
+function setSpeaker(enabled) {
+    speakerEnabled = enabled;
+
+    if (window.NovaAudio) {
+        window.NovaAudio.setSpeakerphone(enabled);
+    } else {
+        console.error("NOVA: Androids ljudbrygga saknas.");
+    }
+
+    speakerButton.textContent = enabled
+        ? "Högtalare på"
+        : "Högtalare av";
+
+    speakerButton.classList.toggle("active", enabled);
 }
 
 function updateParticipants() {
@@ -207,7 +236,6 @@ async function attachAudio(track) {
     element.muted = false;
     element.volume = 1;
 
-    // Håll ljudspelaren utanför det synliga gränssnittet.
     element.style.position = "fixed";
     element.style.left = "-9999px";
     element.style.width = "1px";
@@ -265,7 +293,6 @@ connectButton.addEventListener("click", async () => {
             updateParticipants
         );
 
-        // När en annan deltagare skickar ett ljudspår.
         room.on(
             RoomEvent.TrackSubscribed,
             async (track, publication, participant) => {
@@ -280,7 +307,6 @@ connectButton.addEventListener("click", async () => {
             }
         );
 
-        // Ta bort ljudspelaren när ljudspåret avslutas.
         room.on(
             RoomEvent.TrackUnsubscribed,
             (track) => {
@@ -290,12 +316,14 @@ connectButton.addEventListener("click", async () => {
 
         room.on(RoomEvent.Disconnected, () => {
             micEnabled = false;
+            setSpeaker(false);
             updateParticipants();
 
             setStatus("Frånkopplad.");
 
             connectButton.disabled = false;
             micButton.disabled = true;
+            speakerButton.disabled = true;
             leaveButton.disabled = true;
         });
 
@@ -304,7 +332,6 @@ connectButton.addEventListener("click", async () => {
             credentials.token
         );
 
-        // Försök låsa upp ljuduppspelningen i Android WebView.
         try {
             await room.startAudio();
 
@@ -318,18 +345,20 @@ connectButton.addEventListener("click", async () => {
             );
         }
 
-        // Aktivera mikrofonen.
         await room.localParticipant.setMicrophoneEnabled(true);
 
         micEnabled = true;
 
         connectButton.disabled = true;
         micButton.disabled = false;
+        speakerButton.disabled = false;
         leaveButton.disabled = false;
 
         setStatus("Ansluten till " + credentials.room);
 
         micButton.textContent = "Mikrofon av";
+
+        setSpeaker(false);
 
         updateParticipants();
 
@@ -371,6 +400,13 @@ micButton.addEventListener("click", async () => {
     }
 });
 
+// Växla mellan telefonens hörlur och högtalare.
+speakerButton.addEventListener("click", () => {
+    if (!room) return;
+
+    setSpeaker(!speakerEnabled);
+});
+
 // Lämna röstkanalen.
 leaveButton.addEventListener("click", async () => {
     if (room) {
@@ -379,11 +415,13 @@ leaveButton.addEventListener("click", async () => {
     }
 
     micEnabled = false;
+    setSpeaker(false);
 
     participantsElement.innerHTML = "";
 
     connectButton.disabled = false;
     micButton.disabled = true;
+    speakerButton.disabled = true;
     leaveButton.disabled = true;
 
     micButton.textContent = "Mikrofon av";
@@ -393,4 +431,3 @@ leaveButton.addEventListener("click", async () => {
 </script>
 </body>
 </html>
-```
