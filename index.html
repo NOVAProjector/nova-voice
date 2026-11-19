@@ -487,6 +487,7 @@ function renderParticipants(list, showSpeaking = false) {
     for (const participant of list) {
 
         const name =
+            participant.username ||
             participant.name ||
             participant.identity ||
             "NOVA-användare";
@@ -518,7 +519,11 @@ function renderParticipants(list, showSpeaking = false) {
         const description = document.createElement("div");
 
         description.className = "participant-description";
-        description.textContent = "Ansluten till NOVA Voice";
+
+        description.textContent =
+            participant.isAdmin === true
+                ? "Admin"
+                : "User";
 
         info.appendChild(nameElement);
         info.appendChild(description);
@@ -550,7 +555,7 @@ async function fetchObserverParticipants() {
         return;
     }
 
-    if (connected || connecting) {
+    if (connecting) {
         return;
     }
 
@@ -593,7 +598,14 @@ async function fetchObserverParticipants() {
                 ? data.participants
                 : [];
 
-        if (!connected && !connecting) {
+        if (connected) {
+
+            // Uppdatera LiveKit-listan med den nya profilinformationen.
+            updateLiveKitParticipants();
+
+        } else if (!connecting) {
+
+            // Visningsläge när användaren inte är ansluten.
             renderParticipants(observerParticipants, false);
 
             setStatus("Redo att ansluta", "online");
@@ -635,9 +647,7 @@ function startParticipantRefresh() {
 
     participantRefreshTimer = setInterval(() => {
 
-        if (!connected && !connecting) {
-            fetchObserverParticipants();
-        }
+        fetchObserverParticipants();
 
     }, 3000);
 }
@@ -666,22 +676,54 @@ function updateLiveKitParticipants() {
 
     const list = [];
 
+    // Matcha LiveKit-identiteten mot Supabase-profilen.
+    function getProfile(identity) {
+
+        return observerParticipants.find(
+            participant => participant.identity === identity
+        );
+    }
+
     const local = room.localParticipant;
 
     if (local) {
 
+        const profile = getProfile(local.identity);
+
         list.push({
             identity: local.identity,
-            name: local.name || local.identity,
+
+            name:
+                profile?.username ||
+                profile?.name ||
+                local.name ||
+                local.identity,
+
+            username: profile?.username || null,
+
+            isAdmin: profile?.isAdmin === true,
+
             isSpeaking: local.isSpeaking
         });
     }
 
     for (const participant of room.remoteParticipants.values()) {
 
+        const profile = getProfile(participant.identity);
+
         list.push({
             identity: participant.identity,
-            name: participant.name || participant.identity,
+
+            name:
+                profile?.username ||
+                profile?.name ||
+                participant.name ||
+                participant.identity,
+
+            username: profile?.username || null,
+
+            isAdmin: profile?.isAdmin === true,
+
             isSpeaking: participant.isSpeaking
         });
     }
@@ -970,6 +1012,9 @@ async function connectToVoice() {
             "Ansluten till NOVA Voice",
             "connected"
         );
+
+        // Fortsätt hämta profilinformation även under samtalet.
+        startParticipantRefresh();
 
     } catch (error) {
 
