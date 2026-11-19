@@ -14,8 +14,8 @@
 body {
     margin: 0;
     padding: 20px;
-    background: #111827;
-    color: white;
+    background: #F5F7FA;
+    color: #172B3A;
     font-family: Arial, sans-serif;
 }
 
@@ -25,51 +25,76 @@ body {
 }
 
 h2 {
-    margin-bottom: 5px;
+    margin: 0 0 8px;
+    font-size: 23px;
+    font-weight: 700;
+    color: #172B3A;
 }
 
 .status {
-    color: #9ca3af;
+    color: #64748B;
+    font-size: 14px;
     margin-bottom: 25px;
+    line-height: 1.5;
 }
 
 .participant {
     display: flex;
     align-items: center;
-    padding: 14px;
+    padding: 15px;
     margin-bottom: 10px;
-    background: #1f2937;
-    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 13px;
+    transition: border-color 0.2s ease,
+                background 0.2s ease;
 }
 
 .avatar {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
     border-radius: 50%;
-    background: #374151;
+    background: #E8F2FF;
+    color: #007FFF;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 12px;
+    margin-right: 13px;
     font-size: 20px;
 }
 
 .participant-info {
     flex: 1;
+    min-width: 0;
 }
 
 .participant-name {
     font-weight: bold;
+    font-size: 15px;
+    color: #172B3A;
+    overflow-wrap: anywhere;
 }
 
 .participant-status {
     font-size: 12px;
-    color: #9ca3af;
-    margin-top: 4px;
+    color: #64748B;
+    margin-top: 5px;
 }
 
 .speaking {
-    border: 1px solid #22c55e;
+    border: 1px solid #007FFF;
+    background: #F0F7FF;
+}
+
+.speaking .avatar {
+    background: #007FFF;
+    color: white;
+}
+
+.speaking .participant-status {
+    color: #007FFF;
+    font-weight: bold;
 }
 
 .buttons {
@@ -83,13 +108,24 @@ button {
     flex: 1;
     min-width: 100px;
     padding: 15px 10px;
-    border: 0;
-    border-radius: 10px;
-    font-size: 15px;
+    border: none;
+    border-radius: 11px;
+    font-size: 14px;
     font-weight: bold;
     color: white;
-    background: #2563eb;
+    background: #007FFF;
     cursor: pointer;
+    transition: background 0.2s ease,
+                opacity 0.2s ease,
+                transform 0.1s ease;
+}
+
+button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+button:hover:not(:disabled) {
+    background: #006FE0;
 }
 
 button:disabled {
@@ -98,23 +134,67 @@ button:disabled {
 }
 
 #micButton {
-    background: #374151;
+    background: #E8F2FF;
+    color: #007FFF;
+}
+
+#micButton.active {
+    background: #007FFF;
+    color: white;
+}
+
+#micButton:hover:not(:disabled) {
+    background: #D8E9FF;
+}
+
+#micButton.active:hover:not(:disabled) {
+    background: #006FE0;
 }
 
 #speakerButton {
-    background: #374151;
+    background: #E8F2FF;
+    color: #007FFF;
 }
 
 #speakerButton.active {
-    background: #16a34a;
+    background: #007FFF;
+    color: white;
+}
+
+#speakerButton:hover:not(:disabled) {
+    background: #D8E9FF;
+}
+
+#speakerButton.active:hover:not(:disabled) {
+    background: #006FE0;
 }
 
 #leaveButton {
-    background: #dc2626;
+    background: #DC3545;
+    color: white;
+}
+
+#leaveButton:hover:not(:disabled) {
+    background: #C82333;
 }
 
 #participants {
     margin-top: 15px;
+}
+
+@media (max-width: 420px) {
+    body {
+        padding: 16px;
+    }
+
+    .buttons {
+        gap: 8px;
+    }
+
+    button {
+        min-width: calc(50% - 8px);
+        padding: 14px 8px;
+    }
 }
 </style>
 </head>
@@ -316,6 +396,7 @@ connectButton.addEventListener("click", async () => {
 
         room.on(RoomEvent.Disconnected, () => {
             micEnabled = false;
+            micButton.classList.remove("active");
             setSpeaker(false);
             updateParticipants();
 
@@ -354,13 +435,14 @@ connectButton.addEventListener("click", async () => {
         speakerButton.disabled = false;
         leaveButton.disabled = false;
 
-        setStatus("Ansluten till " + credentials.room);
-
         micButton.textContent = "Mikrofon av";
+        micButton.classList.add("active");
 
         setSpeaker(false);
 
         updateParticipants();
+
+        setStatus("Ansluten till " + credentials.room);
 
     } catch (error) {
         console.error("NOVA anslutningsfel:", error);
@@ -392,6 +474,8 @@ micButton.addEventListener("click", async () => {
             ? "Mikrofon av"
             : "Mikrofon på";
 
+        micButton.classList.toggle("active", micEnabled);
+
         updateParticipants();
 
     } catch (error) {
@@ -415,6 +499,8 @@ leaveButton.addEventListener("click", async () => {
     }
 
     micEnabled = false;
+    micButton.classList.remove("active");
+
     setSpeaker(false);
 
     participantsElement.innerHTML = "";
