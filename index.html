@@ -2,357 +2,882 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NOVA Röstkanal</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NOVA Voice</title>
 
-<style>
-* {
-    box-sizing: border-box;
-}
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-body {
-    margin: 0;
-    padding: 20px;
-    background: #F5F7FA;
-    color: #172B3A;
-    font-family: Arial, sans-serif;
-}
+        body {
+            margin: 0;
+            padding: 22px 18px 30px;
+            background: #F5F7FA;
+            color: #172B3A;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         Roboto, Arial, sans-serif;
+        }
 
-.container {
-    max-width: 600px;
-    margin: auto;
-}
+        .container {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+        }
 
-h2 {
-    margin: 0 0 8px;
-    font-size: 23px;
-    font-weight: 700;
-    color: #172B3A;
-}
+        .page-header {
+            text-align: center;
+            margin: 8px 0 26px;
+        }
 
-.status {
-    color: #64748B;
-    font-size: 14px;
-    margin-bottom: 25px;
-    line-height: 1.5;
-}
+        .logo {
+            font-size: 27px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            color: #172B3A;
+        }
 
-.participant {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 13px;
-    transition: border-color 0.2s ease,
-                background 0.2s ease;
-}
+        .logo span {
+            color: #007FFF;
+        }
 
-.avatar {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-    border-radius: 50%;
-    background: #E8F2FF;
-    color: #007FFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 13px;
-    font-size: 20px;
-}
+        .subtitle {
+            margin-top: 7px;
+            color: #718096;
+            font-size: 14px;
+        }
 
-.participant-info {
-    flex: 1;
-    min-width: 0;
-}
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 15px;
+            padding: 7px 13px;
+            border-radius: 30px;
+            background: #EAF0F6;
+            color: #64748B;
+            font-size: 12px;
+            font-weight: 600;
+        }
 
-.participant-name {
-    font-weight: bold;
-    font-size: 15px;
-    color: #172B3A;
-    overflow-wrap: anywhere;
-}
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94A3B8;
+        }
 
-.participant-status {
-    font-size: 12px;
-    color: #64748B;
-    margin-top: 5px;
-}
+        .status.online {
+            background: #E7F8ED;
+            color: #168044;
+        }
 
-.speaking {
-    border: 1px solid #007FFF;
-    background: #F0F7FF;
-}
+        .status.online .status-dot {
+            background: #22C55E;
+        }
 
-.speaking .avatar {
-    background: #007FFF;
-    color: white;
-}
+        .status.connected {
+            background: #E6F2FF;
+            color: #007FFF;
+        }
 
-.speaking .participant-status {
-    color: #007FFF;
-    font-weight: bold;
-}
+        .status.connected .status-dot {
+            background: #007FFF;
+        }
 
-.buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 27px 2px 12px;
+        }
 
-button {
-    flex: 1;
-    min-width: 100px;
-    padding: 15px 10px;
-    border: none;
-    border-radius: 11px;
-    font-size: 14px;
-    font-weight: bold;
-    color: white;
-    background: #007FFF;
-    cursor: pointer;
-    transition: background 0.2s ease,
-                opacity 0.2s ease,
-                transform 0.1s ease;
-}
+        .section-heading h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
 
-button:active:not(:disabled) {
-    transform: scale(0.98);
-}
+        .participant-count {
+            color: #718096;
+            font-size: 12px;
+        }
 
-button:hover:not(:disabled) {
-    background: #006FE0;
-}
+        .participant-panel {
+            background: #FFFFFF;
+            border: 1px solid #E8EDF3;
+            border-radius: 17px;
+            padding: 7px;
+            box-shadow: 0 3px 12px rgba(20, 40, 70, 0.035);
+            min-height: 120px;
+        }
 
-button:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
+        .participant {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 11px;
+            border-radius: 12px;
+            transition: background 0.2s ease, border 0.2s ease;
+            border: 1px solid transparent;
+        }
 
-#micButton {
-    background: #E8F2FF;
-    color: #007FFF;
-}
+        .participant + .participant {
+            margin-top: 3px;
+        }
 
-#micButton.active {
-    background: #007FFF;
-    color: white;
-}
+        .participant.speaking {
+            background: #F0F8FF;
+            border-color: #B9DCFF;
+        }
 
-#micButton:hover:not(:disabled) {
-    background: #D8E9FF;
-}
+        .avatar {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #E5F1FF;
+            color: #007FFF;
+            font-size: 16px;
+            font-weight: 700;
+        }
 
-#micButton.active:hover:not(:disabled) {
-    background: #006FE0;
-}
+        .participant-info {
+            flex: 1;
+            min-width: 0;
+        }
 
-#speakerButton {
-    background: #E8F2FF;
-    color: #007FFF;
-}
+        .participant-name {
+            font-size: 14px;
+            font-weight: 650;
+            color: #243447;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-#speakerButton.active {
-    background: #007FFF;
-    color: white;
-}
+        .participant-description {
+            margin-top: 3px;
+            font-size: 11px;
+            color: #94A3B8;
+        }
 
-#speakerButton:hover:not(:disabled) {
-    background: #D8E9FF;
-}
+        .speaking-indicator {
+            display: none;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22C55E;
+        }
 
-#speakerButton.active:hover:not(:disabled) {
-    background: #006FE0;
-}
+        .participant.speaking .speaking-indicator {
+            display: block;
+        }
 
-#leaveButton {
-    background: #DC3545;
-    color: white;
-}
+        .empty-state {
+            padding: 30px 12px;
+            text-align: center;
+            color: #94A3B8;
+            font-size: 13px;
+            line-height: 1.6;
+        }
 
-#leaveButton:hover:not(:disabled) {
-    background: #C82333;
-}
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 23px;
+            margin: 38px auto 0;
+        }
 
-#participants {
-    margin-top: 15px;
-}
+        .control-button {
+            border: none;
+            outline: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease, background 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-@media (max-width: 420px) {
-    body {
-        padding: 16px;
-    }
+        .control-button:active {
+            transform: scale(0.93);
+        }
 
-    .buttons {
-        gap: 8px;
-    }
+        .side-button {
+            width: 57px;
+            height: 57px;
+            border-radius: 50%;
+            background: #E9EEF4;
+            color: #526477;
+        }
 
-    button {
-        min-width: calc(50% - 8px);
-        padding: 14px 8px;
-    }
-}
-</style>
+        .side-button.active {
+            background: #DDF7E7;
+            color: #168044;
+        }
+
+        .side-button.muted {
+            background: #FDE5E5;
+            color: #DC2626;
+        }
+
+        .call-button {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background: #22C55E;
+            color: #FFFFFF;
+            box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
+        }
+
+        .call-button.disconnect {
+            background: #EF4444;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.22);
+        }
+
+        .call-button:disabled,
+        .side-button:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
+        .call-label {
+            margin-top: 12px;
+            text-align: center;
+            color: #64748B;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .controls.hidden {
+            display: none;
+        }
+
+        .side-button.hidden {
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 38px;
+            color: #A0AEC0;
+            font-size: 11px;
+        }
+
+        .footer strong {
+            color: #007FFF;
+            font-weight: 700;
+        }
+
+        .hidden-compatibility {
+            display: none !important;
+        }
+
+        svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .call-button svg {
+            width: 29px;
+            height: 29px;
+        }
+    </style>
 </head>
 
 <body>
+
 <div class="container">
 
-    <h2>NOVA Röstkanal</h2>
-    <div class="status" id="status">Väntar på anslutning...</div>
+    <header class="page-header">
+        <div class="logo">NOVA <span>Voice</span></div>
+        <div class="subtitle">Intern röstkanal</div>
 
-    <div id="participants"></div>
+        <div class="status" id="status">
+            <span class="status-dot"></span>
+            <span id="statusText">Väntar på anslutning...</span>
+        </div>
+    </header>
 
-    <div class="buttons">
-        <button id="connectButton">Anslut</button>
-        <button id="micButton" disabled>Mikrofon av</button>
-        <button id="speakerButton" disabled>Högtalare av</button>
-        <button id="leaveButton" disabled>Lämna</button>
+    <div class="section-heading">
+        <h3>Deltagare</h3>
+        <span class="participant-count" id="participantCount">
+            0 anslutna
+        </span>
+    </div>
+
+    <div class="participant-panel" id="participants">
+        <div class="empty-state">
+            Hämtar deltagare...
+        </div>
+    </div>
+
+    <div class="controls" id="controls">
+
+        <!-- Högtalare -->
+        <button
+            class="control-button side-button hidden"
+            id="speakerButton"
+            aria-label="Högtalare"
+            disabled>
+
+            <svg viewBox="0 0 24 24" id="speakerIcon">
+                <path d="M11 5 6 9H3v6h3l5 4V5Z"/>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                <path d="M19 5a10 10 0 0 1 0 14"/>
+            </svg>
+        </button>
+
+        <!-- Anslut / Koppla från -->
+        <button
+            class="control-button call-button"
+            id="callButton"
+            aria-label="Anslut">
+
+            <svg viewBox="0 0 24 24" id="callIcon">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+                19.79 19.79 0 0 1-8.63-3.07
+                19.5 19.5 0 0 1-6-6
+                A19.79 19.79 0 0 1 2.12 4.18
+                2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72
+                c.12.96.35 1.9.7 2.8
+                a2 2 0 0 1-.45 2.11L8.09 9.91
+                a16 16 0 0 0 6 6l1.27-1.27
+                a2 2 0 0 1 2.11-.45
+                c.9.35 1.84.58 2.8.7
+                A2 2 0 0 1 22 16.92Z"/>
+            </svg>
+        </button>
+
+        <!-- Mikrofon -->
+        <button
+            class="control-button side-button hidden"
+            id="micButton"
+            aria-label="Mikrofon"
+            disabled>
+
+            <svg viewBox="0 0 24 24" id="micIcon">
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+                <path d="M12 19v3"/>
+                <path d="M8 22h8"/>
+            </svg>
+        </button>
+
+    </div>
+
+    <div class="call-label" id="callLabel">Anslut till röstkanalen</div>
+
+    <div class="footer">
+        <strong>NOVA</strong> · Intern kommunikation
     </div>
 
 </div>
 
+<!-- Behålls för MAUI:s befintliga frånkopplingsfunktion -->
+<button id="leaveButton" class="hidden-compatibility" type="button">
+    Lämna
+</button>
+
 <script type="module">
+
 import {
     Room,
     RoomEvent,
     Track
 } from "https://cdn.jsdelivr.net/npm/livekit-client@2.23.0/+esm";
 
-let credentials = null;
-let room = null;
-let micEnabled = false;
-let speakerEnabled = false;
+const SUPABASE_URL =
+    "https://txaoaukewcjlvooqteoc.supabase.co";
+
+const SUPABASE_ANON_KEY =
+    "sb_publishable_-FIdsU4ubt7NFU1aCIfeEA_9U_A2xhG";
+
+const PARTICIPANTS_FUNCTION =
+    SUPABASE_URL + "/functions/v1/get-voice-participants";
 
 const statusElement = document.getElementById("status");
-const participantsElement = document.getElementById("participants");
-const connectButton = document.getElementById("connectButton");
+const statusText = document.getElementById("statusText");
+
+const participantsElement =
+    document.getElementById("participants");
+
+const participantCount =
+    document.getElementById("participantCount");
+
+const callButton = document.getElementById("callButton");
+const callIcon = document.getElementById("callIcon");
+const callLabel = document.getElementById("callLabel");
+
 const micButton = document.getElementById("micButton");
+const micIcon = document.getElementById("micIcon");
+
 const speakerButton = document.getElementById("speakerButton");
+
 const leaveButton = document.getElementById("leaveButton");
 
-function setStatus(text) {
-    statusElement.textContent = text;
-}
+let credentials = null;
+let room = null;
 
-function setSpeaker(enabled) {
-    speakerEnabled = enabled;
+let connected = false;
+let connecting = false;
 
-    if (window.NovaAudio) {
-        window.NovaAudio.setSpeakerphone(enabled);
-    } else {
-        console.error("NOVA: Androids ljudbrygga saknas.");
+let micEnabled = true;
+let speakerEnabled = false;
+
+let participantRefreshTimer = null;
+let participantRequestInProgress = false;
+
+let observerParticipants = [];
+
+
+// --------------------------------------------------
+// STATUS
+// --------------------------------------------------
+
+function setStatus(text, type = "") {
+
+    statusText.textContent = text;
+
+    statusElement.className = "status";
+
+    if (type) {
+        statusElement.classList.add(type);
     }
-
-    speakerButton.textContent = enabled
-        ? "Högtalare på"
-        : "Högtalare av";
-
-    speakerButton.classList.toggle("active", enabled);
 }
 
-function updateParticipants() {
-    if (!room) return;
+
+// --------------------------------------------------
+// PARTICIPANT LIST
+// --------------------------------------------------
+
+function renderParticipants(list, showSpeaking = false) {
 
     participantsElement.innerHTML = "";
 
-    const participants = [
-        room.localParticipant,
-        ...room.remoteParticipants.values()
-    ];
+    participantCount.textContent =
+        list.length + (list.length === 1
+            ? " ansluten"
+            : " anslutna");
 
-    for (const participant of participants) {
-        const isLocal =
-            participant.identity === room.localParticipant.identity;
+    if (!list.length) {
 
-        const isSpeaking = participant.isSpeaking;
+        const empty = document.createElement("div");
 
-        const item = document.createElement("div");
-        item.className = "participant" +
-            (isSpeaking ? " speaking" : "");
+        empty.className = "empty-state";
+        empty.textContent =
+            "Ingen är ansluten till röstkanalen just nu.";
 
-        const avatar = document.createElement("div");
-        avatar.className = "avatar";
-        avatar.textContent = isLocal ? "🎙" : "👤";
+        participantsElement.appendChild(empty);
 
-        const info = document.createElement("div");
-        info.className = "participant-info";
+        return;
+    }
 
-        const name = document.createElement("div");
-        name.className = "participant-name";
-        name.textContent =
+    for (const participant of list) {
+
+        const name =
             participant.name ||
             participant.identity ||
             "NOVA-användare";
 
-        const participantStatus = document.createElement("div");
-        participantStatus.className = "participant-status";
-        participantStatus.textContent = isSpeaking
-            ? "● Pratar"
-            : (isLocal
-                ? (micEnabled ? "Din mikrofon är på" : "Din mikrofon är av")
-                : "Ansluten");
+        const item = document.createElement("div");
 
-        info.appendChild(name);
-        info.appendChild(participantStatus);
+        item.className = "participant";
+
+        if (showSpeaking && participant.isSpeaking) {
+            item.classList.add("speaking");
+        }
+
+        const avatar = document.createElement("div");
+
+        avatar.className = "avatar";
+
+        avatar.textContent =
+            name.trim().charAt(0).toUpperCase() || "?";
+
+        const info = document.createElement("div");
+
+        info.className = "participant-info";
+
+        const nameElement = document.createElement("div");
+
+        nameElement.className = "participant-name";
+        nameElement.textContent = name;
+
+        const description = document.createElement("div");
+
+        description.className = "participant-description";
+        description.textContent = "Ansluten till NOVA Voice";
+
+        info.appendChild(nameElement);
+        info.appendChild(description);
+
+        const indicator = document.createElement("div");
+
+        indicator.className = "speaking-indicator";
 
         item.appendChild(avatar);
         item.appendChild(info);
+        item.appendChild(indicator);
 
         participantsElement.appendChild(item);
     }
 }
 
-// Hantera inkommande ljud från andra deltagare.
-async function attachAudio(track) {
-    const element = track.attach();
 
-    element.autoplay = true;
-    element.playsInline = true;
-    element.muted = false;
-    element.volume = 1;
+// --------------------------------------------------
+// HÄMTA DELTAGARE FRÅN SUPABASE
+// --------------------------------------------------
 
-    element.style.position = "fixed";
-    element.style.left = "-9999px";
-    element.style.width = "1px";
-    element.style.height = "1px";
+async function fetchObserverParticipants() {
 
-    document.body.appendChild(element);
-
-    try {
-        await element.play();
-        console.log("NOVA: Ljuduppspelning startad.");
-    } catch (error) {
-        console.error(
-            "NOVA: Kunde inte starta ljuduppspelning:",
-            error
-        );
-    }
-}
-
-// Ta emot inloggningsuppgifter från NOVA-appen.
-window.NOVA = {
-    receiveCredentials(data) {
-        credentials = data;
-        setStatus("Redo att ansluta till NOVA.");
-    }
-};
-
-// Anslut till den globala röstkanalen.
-connectButton.addEventListener("click", async () => {
-    if (!credentials) {
-        setStatus("Inloggningsuppgifter saknas.");
+    if (!credentials?.accessToken) {
         return;
     }
 
-    connectButton.disabled = true;
-    setStatus("Ansluter...");
+    if (participantRequestInProgress) {
+        return;
+    }
+
+    if (connected || connecting) {
+        return;
+    }
+
+    participantRequestInProgress = true;
 
     try {
+
+        const response = await fetch(PARTICIPANTS_FUNCTION, {
+            method: "POST",
+
+            headers: {
+                "Authorization":
+                    "Bearer " + credentials.accessToken,
+
+                "apikey": SUPABASE_ANON_KEY,
+
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({})
+        });
+
+        if (!response.ok) {
+
+            if (response.status === 401) {
+                console.warn(
+                    "Supabase-sessionen behöver uppdateras."
+                );
+            }
+
+            throw new Error(
+                "Kunde inte hämta deltagare: " + response.status
+            );
+        }
+
+        const data = await response.json();
+
+        observerParticipants =
+            Array.isArray(data.participants)
+                ? data.participants
+                : [];
+
+        if (!connected && !connecting) {
+            renderParticipants(observerParticipants, false);
+
+            setStatus("Redo att ansluta", "online");
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Fel vid hämtning av deltagare:",
+            error
+        );
+
+        if (!observerParticipants.length) {
+
+            participantsElement.innerHTML = `
+                <div class="empty-state">
+                    Kunde inte hämta deltagarlistan.<br>
+                    Försöker igen automatiskt...
+                </div>
+            `;
+        }
+
+    } finally {
+
+        participantRequestInProgress = false;
+    }
+}
+
+
+// --------------------------------------------------
+// AUTOMATISK UPPDATERING
+// --------------------------------------------------
+
+function startParticipantRefresh() {
+
+    stopParticipantRefresh();
+
+    fetchObserverParticipants();
+
+    participantRefreshTimer = setInterval(() => {
+
+        if (!connected && !connecting) {
+            fetchObserverParticipants();
+        }
+
+    }, 3000);
+}
+
+
+function stopParticipantRefresh() {
+
+    if (participantRefreshTimer !== null) {
+
+        clearInterval(participantRefreshTimer);
+
+        participantRefreshTimer = null;
+    }
+}
+
+
+// --------------------------------------------------
+// LIVEKIT-DELTAGARE
+// --------------------------------------------------
+
+function updateLiveKitParticipants() {
+
+    if (!room || !connected) {
+        return;
+    }
+
+    const list = [];
+
+    const local = room.localParticipant;
+
+    if (local) {
+
+        list.push({
+            identity: local.identity,
+            name: local.name || local.identity,
+            isSpeaking: local.isSpeaking
+        });
+    }
+
+    for (const participant of room.remoteParticipants.values()) {
+
+        list.push({
+            identity: participant.identity,
+            name: participant.name || participant.identity,
+            isSpeaking: participant.isSpeaking
+        });
+    }
+
+    renderParticipants(list, true);
+}
+
+
+// --------------------------------------------------
+// LJUD
+// --------------------------------------------------
+
+function attachAudio(track) {
+
+    if (track.kind !== Track.Kind.Audio) {
+        return;
+    }
+
+    const audioElement = track.attach();
+
+    audioElement.style.display = "none";
+
+    document.body.appendChild(audioElement);
+
+    audioElement.play().catch(error => {
+        console.warn("Kunde inte starta ljuduppspelning:", error);
+    });
+}
+
+
+function detachAudio(track) {
+
+    track.detach().forEach(element => {
+        element.remove();
+    });
+}
+
+
+async function setSpeaker(enabled) {
+
+    speakerEnabled = enabled;
+
+    try {
+
+        if (window.NovaAudio) {
+
+            window.NovaAudio.setSpeakerphone(enabled);
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Kunde inte ändra högtalare:",
+            error
+        );
+    }
+
+    updateControlButtons();
+}
+
+
+// --------------------------------------------------
+// KONTROLLKNAPPAR
+// --------------------------------------------------
+
+function updateControlButtons() {
+
+    if (connected) {
+
+        callButton.classList.add("disconnect");
+
+        callButton.setAttribute(
+            "aria-label",
+            "Koppla från"
+        );
+
+        callIcon.innerHTML = `
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+            19.79 19.79 0 0 1-8.63-3.07
+            19.5 19.5 0 0 1-6-6
+            A19.79 19.79 0 0 1 2.12 4.18
+            2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72
+            c.12.96.35 1.9.7 2.8
+            a2 2 0 0 1-.45 2.11L8.09 9.91
+            a16 16 0 0 0 6 6l1.27-1.27
+            a2 2 0 0 1 2.11-.45
+            c.9.35 1.84.58 2.8.7
+            A2 2 0 0 1 22 16.92Z"/>
+        `;
+
+        micButton.classList.remove("hidden");
+        speakerButton.classList.remove("hidden");
+
+        micButton.disabled = false;
+        speakerButton.disabled = false;
+
+        callLabel.textContent = "Koppla från";
+
+        // Mikrofon
+        if (micEnabled) {
+
+            micButton.classList.add("active");
+            micButton.classList.remove("muted");
+
+            micIcon.innerHTML = `
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+                <path d="M12 19v3"/>
+                <path d="M8 22h8"/>
+            `;
+
+        } else {
+
+            micButton.classList.remove("active");
+            micButton.classList.add("muted");
+
+            micIcon.innerHTML = `
+                <rect x="9" y="2" width="6" height="12" rx="3"/>
+                <path d="M5 10v2a7 7 0 0 0 14 0v-2"/>
+                <path d="M12 19v3"/>
+                <path d="M8 22h8"/>
+                <path d="m3 3 18 18"/>
+            `;
+        }
+
+        // Högtalare
+        if (speakerEnabled) {
+
+            speakerButton.classList.add("active");
+
+        } else {
+
+            speakerButton.classList.remove("active");
+        }
+
+    } else {
+
+        callButton.classList.remove("disconnect");
+
+        callButton.setAttribute(
+            "aria-label",
+            "Anslut"
+        );
+
+        callIcon.innerHTML = `
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+            19.79 19.79 0 0 1-8.63-3.07
+            19.5 19.5 0 0 1-6-6
+            A19.79 19.79 0 0 1 2.12 4.18
+            2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72
+            c.12.96.35 1.9.7 2.8
+            a2 2 0 0 1-.45 2.11L8.09 9.91
+            a16 16 0 0 0 6 6l1.27-1.27
+            a2 2 0 0 1 2.11-.45
+            c.9.35 1.84.58 2.8.7
+            A2 2 0 0 1 22 16.92Z"/>
+        `;
+
+        micButton.classList.add("hidden");
+        speakerButton.classList.add("hidden");
+
+        callLabel.textContent = "Anslut till röstkanalen";
+    }
+}
+
+
+// --------------------------------------------------
+// ANSLUT TILL LIVEKIT
+// --------------------------------------------------
+
+async function connectToVoice() {
+
+    if (!credentials?.token || !credentials?.serverUrl) {
+
+        setStatus(
+            "Inloggningsuppgifter saknas",
+            ""
+        );
+
+        return;
+    }
+
+    if (connected || connecting) {
+        return;
+    }
+
+    connecting = true;
+
+    callButton.disabled = true;
+
+    setStatus("Ansluter...", "");
+
+    stopParticipantRefresh();
+
+    try {
+
         room = new Room({
             adaptiveStream: true,
             dynacast: true
@@ -360,160 +885,289 @@ connectButton.addEventListener("click", async () => {
 
         room.on(
             RoomEvent.ParticipantConnected,
-            updateParticipants
+            updateLiveKitParticipants
         );
 
         room.on(
             RoomEvent.ParticipantDisconnected,
-            updateParticipants
+            updateLiveKitParticipants
         );
 
         room.on(
             RoomEvent.ActiveSpeakersChanged,
-            updateParticipants
+            updateLiveKitParticipants
         );
 
         room.on(
             RoomEvent.TrackSubscribed,
-            async (track, publication, participant) => {
-                if (track.kind === Track.Kind.Audio) {
-                    console.log(
-                        "NOVA: Ljudspår mottaget från:",
-                        participant.identity
-                    );
+            (track) => {
 
-                    await attachAudio(track);
+                if (track.kind === Track.Kind.Audio) {
+                    attachAudio(track);
                 }
+
+                updateLiveKitParticipants();
             }
         );
 
         room.on(
             RoomEvent.TrackUnsubscribed,
             (track) => {
-                track.detach().forEach(element => element.remove());
+
+                detachAudio(track);
+
+                updateLiveKitParticipants();
             }
         );
 
-        room.on(RoomEvent.Disconnected, () => {
-            micEnabled = false;
-            micButton.classList.remove("active");
-            setSpeaker(false);
-            updateParticipants();
+        room.on(
+            RoomEvent.Disconnected,
+            () => {
 
-            setStatus("Frånkopplad.");
+                connected = false;
+                connecting = false;
 
-            connectButton.disabled = false;
-            micButton.disabled = true;
-            speakerButton.disabled = true;
-            leaveButton.disabled = true;
-        });
+                room = null;
+
+                micEnabled = true;
+                speakerEnabled = false;
+
+                updateControlButtons();
+
+                setStatus(
+                    "Frånkopplad",
+                    "online"
+                );
+
+                startParticipantRefresh();
+            }
+        );
 
         await room.connect(
             credentials.serverUrl,
             credentials.token
         );
 
-        try {
-            await room.startAudio();
+        connected = true;
 
-            console.log(
-                "NOVA: LiveKit-ljuduppspelning upplåst."
-            );
-        } catch (audioError) {
-            console.error(
-                "NOVA: Kunde inte låsa upp ljuduppspelningen:",
-                audioError
-            );
-        }
+        await room.startAudio();
 
         await room.localParticipant.setMicrophoneEnabled(true);
 
         micEnabled = true;
 
-        connectButton.disabled = true;
-        micButton.disabled = false;
-        speakerButton.disabled = false;
-        leaveButton.disabled = false;
+        await setSpeaker(false);
 
-        micButton.textContent = "Mikrofon av";
-        micButton.classList.add("active");
+        connecting = false;
 
-        setSpeaker(false);
+        callButton.disabled = false;
 
-        updateParticipants();
+        updateControlButtons();
 
-        setStatus("Ansluten till " + credentials.room);
+        updateLiveKitParticipants();
+
+        setStatus(
+            "Ansluten till NOVA Voice",
+            "connected"
+        );
 
     } catch (error) {
-        console.error("NOVA anslutningsfel:", error);
 
-        setStatus("Kunde inte ansluta: " + error.message);
+        console.error("LiveKit-anslutningsfel:", error);
+
+        connected = false;
+        connecting = false;
 
         if (room) {
+
             try {
                 await room.disconnect();
-            } catch {}
+            } catch (_) {
+            }
 
             room = null;
         }
 
-        connectButton.disabled = false;
+        callButton.disabled = false;
+
+        updateControlButtons();
+
+        setStatus(
+            "Kunde inte ansluta",
+            ""
+        );
+
+        startParticipantRefresh();
+    }
+}
+
+
+// --------------------------------------------------
+// KOPPLA FRÅN
+// --------------------------------------------------
+
+async function disconnectFromVoice() {
+
+    if (room) {
+
+        const currentRoom = room;
+
+        connected = false;
+
+        try {
+
+            await currentRoom.disconnect();
+
+        } catch (error) {
+
+            console.error(
+                "Fel vid frånkoppling:",
+                error
+            );
+        }
+
+        if (room === currentRoom) {
+            room = null;
+        }
+    }
+
+    connected = false;
+    connecting = false;
+
+    micEnabled = true;
+    speakerEnabled = false;
+
+    updateControlButtons();
+
+    setStatus(
+        "Frånkopplad",
+        "online"
+    );
+
+    startParticipantRefresh();
+}
+
+
+// --------------------------------------------------
+// KNAPPAR
+// --------------------------------------------------
+
+callButton.addEventListener("click", async () => {
+
+    if (connected) {
+
+        await disconnectFromVoice();
+
+    } else {
+
+        await connectToVoice();
     }
 });
 
-// Slå på eller av mikrofonen.
+
+leaveButton.addEventListener("click", async () => {
+
+    await disconnectFromVoice();
+});
+
+
 micButton.addEventListener("click", async () => {
-    if (!room) return;
+
+    if (!room || !connected) {
+        return;
+    }
 
     try {
+
         micEnabled = !micEnabled;
 
-        await room.localParticipant.setMicrophoneEnabled(micEnabled);
+        await room.localParticipant.setMicrophoneEnabled(
+            micEnabled
+        );
 
-        micButton.textContent = micEnabled
-            ? "Mikrofon av"
-            : "Mikrofon på";
-
-        micButton.classList.toggle("active", micEnabled);
-
-        updateParticipants();
+        updateControlButtons();
 
     } catch (error) {
-        console.error(error);
-        setStatus("Kunde inte ändra mikrofonen.");
+
+        console.error(
+            "Kunde inte ändra mikrofon:",
+            error
+        );
+
+        micEnabled = !micEnabled;
+
+        updateControlButtons();
     }
 });
 
-// Växla mellan telefonens hörlur och högtalare.
-speakerButton.addEventListener("click", () => {
-    if (!room) return;
 
-    setSpeaker(!speakerEnabled);
-});
+speakerButton.addEventListener("click", async () => {
 
-// Lämna röstkanalen.
-leaveButton.addEventListener("click", async () => {
-    if (room) {
-        await room.disconnect();
-        room = null;
+    if (!connected) {
+        return;
     }
 
-    micEnabled = false;
-    micButton.classList.remove("active");
-
-    setSpeaker(false);
-
-    participantsElement.innerHTML = "";
-
-    connectButton.disabled = false;
-    micButton.disabled = true;
-    speakerButton.disabled = true;
-    leaveButton.disabled = true;
-
-    micButton.textContent = "Mikrofon av";
-
-    setStatus("Du har lämnat röstkanalen.");
+    await setSpeaker(!speakerEnabled);
 });
+
+
+// --------------------------------------------------
+// MAUI-BRYGGA
+// --------------------------------------------------
+
+window.NOVA = window.NOVA || {};
+
+window.NOVA.receiveCredentials = function(data) {
+
+    try {
+
+        if (typeof data === "string") {
+            data = JSON.parse(data);
+        }
+
+        credentials = data;
+
+        if (!credentials?.token ||
+            !credentials?.serverUrl ||
+            !credentials?.accessToken) {
+
+            setStatus(
+                "Kunde inte läsa inloggningsuppgifter",
+                ""
+            );
+
+            return;
+        }
+
+        setStatus(
+            "Redo att ansluta",
+            "online"
+        );
+
+        startParticipantRefresh();
+
+    } catch (error) {
+
+        console.error(
+            "Fel vid mottagning av inloggningsuppgifter:",
+            error
+        );
+
+        setStatus(
+            "Ett fel uppstod",
+            ""
+        );
+    }
+};
+
+
+// --------------------------------------------------
+// START
+// --------------------------------------------------
+
+updateControlButtons();
+
 </script>
+
 </body>
 </html>
